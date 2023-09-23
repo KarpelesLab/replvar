@@ -1,0 +1,3 @@
+# replvar
+
+Variable replacement thingie
