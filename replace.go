@@ -34,7 +34,7 @@ func Replace(ctx context.Context, s string, mode string) (string, error) {
 
 					switch mode {
 					case "script":
-						v := ResolveVariable(ctx, varName)
+						v := Resolve(ctx, varName)
 						buf, err := pjson.Marshal(v)
 						if err != nil {
 							return s, err
@@ -42,7 +42,7 @@ func Replace(ctx context.Context, s string, mode string) (string, error) {
 						}
 						r.Write(buf)
 					default:
-						r.WriteString(ResolveStringVariable(ctx, varName))
+						r.WriteString(ResolveString(ctx, varName))
 					}
 
 					break
