@@ -1,7 +1,6 @@
 package replvar
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"unicode"
@@ -41,8 +40,9 @@ func newParser(s string) *parser {
 // parse will parse content of a variable. if varStart is false, TokenVariableEnd will raise an error
 // instead of returning
 func (p *parser) parse(varStart bool) (Var, error) {
-	var res Var
+	var res []Var
 
+mainloop:
 	for {
 		tok, dat := p.readToken()
 
@@ -51,26 +51,64 @@ func (p *parser) parse(varStart bool) (Var, error) {
 			if !varStart {
 				return nil, fmt.Errorf("unexpected token }}")
 			}
-			return res, nil
+			break mainloop
 		case TokenStringConstant:
-			if res != nil {
-				// TODO
-				return nil, errors.New("res not nil")
-			}
 			sub, err := p.parseString(dat[0])
 			if err != nil {
 				return nil, err
 			}
-			res = sub
+			res = append(res, sub)
 		case TokenVariable:
-			if res != nil {
-				// TODO
-				return nil, errors.New("res not nil")
-			}
-			res = varFetchFromCtx(string(dat))
+			res = append(res, varFetchFromCtx(string(dat)))
+		case TokenDot:
+			res = append(res, varPendingToken(tok))
 		default:
 			return nil, fmt.Errorf("unexpected token %v cur=%c", tok, p.cur())
 		}
+	}
+
+	if len(res) == 0 {
+		return varNull{}, nil
+	}
+
+	// step 2 of parser: associate pending tokens (operators)
+	for {
+		if len(res) == 1 {
+			return res[0], nil
+		}
+
+		if tok, ok := res[0].(varPendingToken); ok {
+			// only ! (TokenNot) or ^ (binary not) operators can be here
+			switch Token(tok) {
+			case TokenNot:
+				not := &varNot{res[1]}
+				res = append([]Var{not}, res[2:]...)
+			default:
+				return nil, fmt.Errorf("unexpected token %v", tok)
+			}
+			continue
+		}
+
+		if tok, ok := res[1].(varPendingToken); ok {
+			if len(res) < 2 {
+				return nil, fmt.Errorf("invalid syntax: expected something after token %v", tok)
+			}
+			switch Token(tok) {
+			case TokenDot:
+				// access a sub element of array, we expect res[2] to be a varFetchFromCtx
+				if v2, ok := res[2].(varFetchFromCtx); ok {
+					access := &varAccessOffset{res[0], string(v2)}
+					res = append([]Var{access}, res[3:]...)
+				} else {
+					return nil, fmt.Errorf("invalid syntax: dot not followed by var")
+				}
+			default:
+				return nil, fmt.Errorf("unexpected token %v", tok)
+			}
+			continue
+		}
+
+		return nil, fmt.Errorf("invalid syntax: expected token in 1st or 2nd position of res")
 	}
 }
 

@@ -32,14 +32,19 @@ func (p *parser) readToken() (Token, []rune) {
 		case '"', '\'', '`':
 			return TokenStringConstant, []rune{p.take()}
 		case '.':
+			p.forward()
 			return TokenDot, nil
 		case '+':
+			p.forward()
 			return TokenAdd, nil
 		case '-':
+			p.forward()
 			return TokenSubstract, nil
 		case '*':
+			p.forward()
 			return TokenMultiply, nil
 		case '/':
+			p.forward()
 			return TokenDivide, nil
 		case '=':
 			if p.next() == '=' {
@@ -114,7 +119,7 @@ func (p *parser) readVariableToken() []rune {
 
 	for {
 		c := p.cur()
-		if (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' {
+		if (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_' {
 			res = append(res, c)
 			p.forward()
 		} else {
