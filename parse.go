@@ -62,8 +62,14 @@ func (p *parser) parse(varStart bool) (Var, error) {
 				return nil, err
 			}
 			res = sub
+		case TokenVariable:
+			if res != nil {
+				// TODO
+				return nil, errors.New("res not nil")
+			}
+			res = varFetchFromCtx(string(dat))
 		default:
-			return nil, fmt.Errorf("unexpected token %v", tok)
+			return nil, fmt.Errorf("unexpected token %v cur=%c", tok, p.cur())
 		}
 	}
 }

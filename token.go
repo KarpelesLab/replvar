@@ -77,6 +77,10 @@ func (p *parser) readToken() (Token, []rune) {
 			// skip spaces
 			p.forward()
 		default:
+			c := p.cur()
+			if (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' {
+				return TokenVariable, p.readVariableToken()
+			}
 			return TokenInvalid, nil
 		}
 	}
@@ -100,6 +104,20 @@ func (p *parser) readNumberToken() []rune {
 			hasDot = true
 			p.forward()
 		default:
+			return res
+		}
+	}
+}
+
+func (p *parser) readVariableToken() []rune {
+	var res []rune
+
+	for {
+		c := p.cur()
+		if (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' {
+			res = append(res, c)
+			p.forward()
+		} else {
 			return res
 		}
 	}

@@ -49,3 +49,13 @@ func (a varConcat) IsStatic() bool {
 	}
 	return true
 }
+
+type varFetchFromCtx string
+
+func (a varFetchFromCtx) Resolve(ctx context.Context) (any, error) {
+	return ctx.Value(string(a)), nil
+}
+
+func (a varFetchFromCtx) IsStatic() bool {
+	return false
+}
