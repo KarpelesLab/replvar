@@ -15,6 +15,7 @@ func Replace(ctx context.Context, s string, mode string) (string, error) {
 
 	prevC := rune(0)
 	var vdata *strings.Builder
+	changed := false
 
 	for _, C := range s {
 		if vdata != nil {
@@ -28,13 +29,14 @@ func Replace(ctx context.Context, s string, mode string) (string, error) {
 					varName := vdata.String()
 					varName = varName[:len(varName)-1]
 					vdata = nil
+					changed = true
 
 					switch mode {
 					case "script":
 						v := resolveVariable(ctx, varName)
 						buf, err := pjson.Marshal(v)
 						if err != nil {
-							return "", err
+							return s, err
 							break
 						}
 						r.Write(buf)
@@ -61,6 +63,11 @@ func Replace(ctx context.Context, s string, mode string) (string, error) {
 		// nothing
 		r.WriteRune(C)
 		prevC = C
+	}
+
+	if !changed {
+		// no change → return initial s value
+		return s, nil
 	}
 
 	if vdata != nil {
