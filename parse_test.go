@@ -18,6 +18,10 @@ func TestParser(t *testing.T) {
 
 	testV := []*testVector{
 		&testVector{"hello {{var}}", "hello world"},
+		&testVector{"hello {{  var   \r\n}}", "hello world"},
+		&testVector{"hello {{'world'}}", "hello world"},
+		&testVector{"hello {{`world 2\\t`}}", "hello world 2\\t"},
+		&testVector{"hello {{\"world \\t\"}}", "hello world \t"},
 	}
 
 	for _, vect := range testV {
