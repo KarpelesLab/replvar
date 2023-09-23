@@ -8,6 +8,7 @@ import (
 	"github.com/KarpelesLab/pjson"
 )
 
+// Replace will replace any variable found in s with their value from the context
 func Replace(ctx context.Context, s string, mode string) (string, error) {
 	// attempt to locate {{ in s, if found locate }} and change string. If nothing is found, return empty string, false
 	//r := &strings.Builder{}
@@ -33,7 +34,7 @@ func Replace(ctx context.Context, s string, mode string) (string, error) {
 
 					switch mode {
 					case "script":
-						v := resolveVariable(ctx, varName)
+						v := ResolveVariable(ctx, varName)
 						buf, err := pjson.Marshal(v)
 						if err != nil {
 							return s, err
@@ -41,7 +42,7 @@ func Replace(ctx context.Context, s string, mode string) (string, error) {
 						}
 						r.Write(buf)
 					default:
-						r.WriteString(resolveStringVariable(ctx, varName))
+						r.WriteString(ResolveStringVariable(ctx, varName))
 					}
 
 					break

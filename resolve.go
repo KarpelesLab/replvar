@@ -8,14 +8,15 @@ import (
 	"github.com/KarpelesLab/typutil"
 )
 
-func resolveStringVariable(ctx context.Context, v string) string {
-	res := resolveVariable(ctx, v)
+// ResolveStringVariable returns the string value for a variable name based on the context
+func ResolveStringVariable(ctx context.Context, v string) string {
+	res := ResolveVariable(ctx, v)
 	strres, _ := typutil.AsString(res)
 	return strres
 }
 
-// resolveVariable returns the value for a variable name based on the current context
-func resolveVariable(ctx context.Context, v string) any {
+// ResolveVariable returns the value for a variable name based on the context
+func ResolveVariable(ctx context.Context, v string) any {
 	// we expect . to be the separator
 	vA := strings.Split(v, ".")
 	cur := ctx.Value(vA[0])
