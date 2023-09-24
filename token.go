@@ -10,18 +10,19 @@ const (
 	TokenVariableEnd // }}
 
 	// operators
-	TokenDot        // .
-	TokenAdd        // +
-	TokenSubstract  // -
-	TokenMultiply   // *
-	TokenDivide     // /
-	TokenEqual      // ==
-	TokenDifferent  // !=
-	TokenNot        // !
-	TokenOr         // |
-	TokenBooleanOr  // ||
-	TokenAnd        // &
-	TokenBooleanAnd // &&
+	TokenDot       // .
+	TokenAdd       // +
+	TokenSubstract // -
+	TokenMultiply  // *
+	TokenDivide    // /
+	TokenEqual     // ==
+	TokenDifferent // !=
+	TokenNot       // !
+	TokenOr        // |
+	TokenLogicOr   // ||
+	TokenAnd       // &
+	TokenLogicAnd  // &&
+	TokenXor       // ^
 )
 
 func (p *parser) readToken() (Token, []rune) {
@@ -46,6 +47,9 @@ func (p *parser) readToken() (Token, []rune) {
 		case '/':
 			p.forward()
 			return TokenDivide, nil
+		case '^':
+			p.forward()
+			return TokenXor, nil
 		case '=':
 			if p.next() == '=' {
 				p.forward2()
@@ -62,14 +66,14 @@ func (p *parser) readToken() (Token, []rune) {
 		case '|':
 			if p.next() == '|' {
 				p.forward2()
-				return TokenBooleanOr, nil
+				return TokenLogicOr, nil
 			}
 			p.forward()
 			return TokenOr, nil
 		case '&':
 			if p.next() == '&' {
 				p.forward2()
-				return TokenBooleanAnd, nil
+				return TokenLogicAnd, nil
 			}
 			p.forward()
 			return TokenAnd, nil
@@ -142,6 +146,10 @@ func (t Token) MathOp() string {
 		return "|"
 	case TokenAnd:
 		return "&"
+	case TokenLogicOr:
+		return "||"
+	case TokenLogicAnd:
+		return "&&"
 	default:
 		return ""
 	}

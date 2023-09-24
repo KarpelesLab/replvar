@@ -139,8 +139,17 @@ func (m *varMath) Resolve(ctx context.Context) (any, error) {
 		return nil, err
 	}
 
-	res, _ := typutil.Math(m.op, a, b)
-	return res, nil
+	switch m.op {
+	case "&&":
+		// logic and
+		return typutil.AsBool(a) && typutil.AsBool(b), nil
+	case "||":
+		// logic or
+		return typutil.AsBool(a) || typutil.AsBool(b), nil
+	default:
+		res, _ := typutil.Math(m.op, a, b)
+		return res, nil
+	}
 }
 
 func (m *varMath) IsStatic() bool {
