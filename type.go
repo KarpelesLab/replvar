@@ -146,6 +146,12 @@ func (m *varMath) Resolve(ctx context.Context) (any, error) {
 	case "||":
 		// logic or
 		return typutil.AsBool(a) || typutil.AsBool(b), nil
+	case "==":
+		// equal
+		return typutil.Equal(a, b), nil
+	case "!=":
+		// not equal
+		return !typutil.Equal(a, b), nil
 	default:
 		res, _ := typutil.Math(m.op, a, b)
 		return res, nil

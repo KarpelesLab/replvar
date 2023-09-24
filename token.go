@@ -150,6 +150,10 @@ func (t Token) MathOp() string {
 		return "||"
 	case TokenLogicAnd:
 		return "&&"
+	case TokenEqual:
+		return "=="
+	case TokenDifferent:
+		return "!="
 	default:
 		return ""
 	}
