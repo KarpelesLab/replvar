@@ -21,9 +21,9 @@ var escapedChars = map[rune]rune{
 }
 
 // ParseString parses a constant string
-func ParseString(s string) (Var, error) {
+func ParseString(s string, mode string) (Var, error) {
 	p := newParser(s)
-	return p.parseString(-1)
+	return p.parseString(-1, mode)
 }
 
 // ParseVariable parses a variable string, such as what is typically found inside {{}}
@@ -55,7 +55,7 @@ mainloop:
 			}
 			break mainloop
 		case TokenStringConstant:
-			sub, err := p.parseString(dat[0])
+			sub, err := p.parseString(dat[0], "text")
 			if err != nil {
 				return nil, err
 			}
@@ -123,7 +123,7 @@ mainloop:
 	}
 }
 
-func (p *parser) parseString(cut rune) (Var, error) {
+func (p *parser) parseString(cut rune, mode string) (Var, error) {
 	var str []rune
 	var res []Var
 
@@ -173,6 +173,10 @@ mainloop:
 				sub, err := p.parse(true)
 				if err != nil {
 					return nil, err
+				}
+				if mode == "json" {
+					// if json mode, encode any subvar as json
+					sub = &varJsonMarshal{sub}
 				}
 				res = append(res, sub)
 				continue mainloop

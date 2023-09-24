@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/KarpelesLab/pjson"
 	"github.com/KarpelesLab/typutil"
 )
 
@@ -144,4 +145,22 @@ func (m *varMath) Resolve(ctx context.Context) (any, error) {
 
 func (m *varMath) IsStatic() bool {
 	return m.a.IsStatic() && m.b.IsStatic()
+}
+
+type varJsonMarshal struct {
+	obj Var
+}
+
+func (j *varJsonMarshal) Resolve(ctx context.Context) (any, error) {
+	res, err := j.obj.Resolve(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	enc, err := pjson.MarshalContext(ctx, res)
+	return string(enc), err
+}
+
+func (j *varJsonMarshal) IsStatic() bool {
+	return j.obj.IsStatic()
 }
