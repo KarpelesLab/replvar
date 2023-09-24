@@ -46,8 +46,15 @@ func (p *parser) parse(varStart bool) (Var, error) {
 
 mainloop:
 	for {
+		if p.empty() {
+			if varStart {
+				// unexpected
+				return nil, io.ErrUnexpectedEOF
+			}
+			// reached end of buffer
+			break
+		}
 		tok, dat := p.readToken()
-
 		switch tok {
 		case TokenVariableEnd:
 			if !varStart {
@@ -68,6 +75,8 @@ mainloop:
 			res = append(res, &staticVar{v})
 		case TokenVariable:
 			res = append(res, varFetchFromCtx(string(dat)))
+		case TokenInvalid:
+			return nil, fmt.Errorf("invalid token found, value=%v", dat)
 		default:
 			// unknown token, defer to step 2
 			res = append(res, varPendingToken(tok))
@@ -203,6 +212,10 @@ func (p *parser) cur() rune {
 		return -1
 	}
 	return p.buf[0]
+}
+
+func (p *parser) empty() bool {
+	return len(p.buf) == 0
 }
 
 func (p *parser) forward() {

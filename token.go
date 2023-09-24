@@ -51,7 +51,7 @@ func (p *parser) readToken() (Token, []rune) {
 				p.forward2()
 				return TokenEqual, nil
 			}
-			return TokenInvalid, nil
+			return TokenInvalid, []rune{p.cur()}
 		case '!':
 			if p.next() == '=' {
 				p.forward2()
@@ -77,7 +77,7 @@ func (p *parser) readToken() (Token, []rune) {
 			if p.next() == '}' {
 				return TokenVariableEnd, []rune{p.take(), p.take()}
 			}
-			return TokenInvalid, nil
+			return TokenInvalid, []rune{p.cur()}
 		case ' ', '\t', '\r', '\n':
 			// skip spaces
 			p.forward()
@@ -86,7 +86,7 @@ func (p *parser) readToken() (Token, []rune) {
 			if (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' {
 				return TokenVariable, p.readVariableToken()
 			}
-			return TokenInvalid, nil
+			return TokenInvalid, []rune{p.cur()}
 		}
 	}
 }
