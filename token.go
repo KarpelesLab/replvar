@@ -127,3 +127,22 @@ func (p *parser) readVariableToken() []rune {
 		}
 	}
 }
+
+func (t Token) MathOp() string {
+	switch t {
+	case TokenAdd:
+		return "+"
+	case TokenSubstract:
+		return "-"
+	case TokenMultiply:
+		return "*"
+	case TokenDivide:
+		return "/"
+	case TokenOr:
+		return "|"
+	case TokenAnd:
+		return "&"
+	default:
+		return ""
+	}
+}

@@ -15,7 +15,7 @@ type testVector struct {
 func TestParser(t *testing.T) {
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "var", "world")
-	ctx = context.WithValue(ctx, "var2", map[string]any{"foo": "bar"})
+	ctx = context.WithValue(ctx, "var2", map[string]any{"foo": "bar", "num": 40})
 
 	testV := []*testVector{
 		&testVector{"hello {{var}}", "hello world"},
@@ -25,6 +25,7 @@ func TestParser(t *testing.T) {
 		&testVector{"hello {{\"world \\t\"}}", "hello world \t"},
 		&testVector{"hello {{var2.foo}}", "hello bar"},
 		&testVector{"hello {{  var2  .   foo   }}", "hello bar"},
+		&testVector{"hello {{var2.num + 2}}", "hello 42"},
 	}
 
 	for _, vect := range testV {

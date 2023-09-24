@@ -122,3 +122,26 @@ func (a *varAccessOffset) Resolve(ctx context.Context) (any, error) {
 func (a *varAccessOffset) IsStatic() bool {
 	return a.sub.IsStatic()
 }
+
+type varMath struct {
+	a, b Var
+	op   string
+}
+
+func (m *varMath) Resolve(ctx context.Context) (any, error) {
+	a, err := m.a.Resolve(ctx)
+	if err != nil {
+		return nil, err
+	}
+	b, err := m.b.Resolve(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	res, _ := typutil.Math(m.op, a, b)
+	return res, nil
+}
+
+func (m *varMath) IsStatic() bool {
+	return m.a.IsStatic() && m.b.IsStatic()
+}

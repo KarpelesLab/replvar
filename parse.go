@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io"
 	"unicode"
+
+	"github.com/KarpelesLab/typutil"
 )
 
 type parser struct {
@@ -58,12 +60,17 @@ mainloop:
 				return nil, err
 			}
 			res = append(res, sub)
+		case TokenNumber:
+			v, ok := typutil.AsNumber(string(dat))
+			if !ok {
+				return nil, fmt.Errorf("invalid number: %s", string(dat))
+			}
+			res = append(res, &staticVar{v})
 		case TokenVariable:
 			res = append(res, varFetchFromCtx(string(dat)))
-		case TokenDot:
-			res = append(res, varPendingToken(tok))
 		default:
-			return nil, fmt.Errorf("unexpected token %v cur=%c", tok, p.cur())
+			// unknown token, defer to step 2
+			res = append(res, varPendingToken(tok))
 		}
 	}
 
@@ -84,7 +91,7 @@ mainloop:
 				not := &varNot{res[1]}
 				res = append([]Var{not}, res[2:]...)
 			default:
-				return nil, fmt.Errorf("unexpected token %v", tok)
+				return nil, fmt.Errorf("step 2: unexpected token %v", tok)
 			}
 			continue
 		}
@@ -103,7 +110,11 @@ mainloop:
 					return nil, fmt.Errorf("invalid syntax: dot not followed by var")
 				}
 			default:
-				return nil, fmt.Errorf("unexpected token %v", tok)
+				if math := Token(tok).MathOp(); math != "" {
+					res = append([]Var{&varMath{res[0], res[2], math}}, res[3:]...)
+					break
+				}
+				return nil, fmt.Errorf("step 2: unexpected token %v", tok)
 			}
 			continue
 		}
