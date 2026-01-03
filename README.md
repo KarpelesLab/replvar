@@ -14,10 +14,11 @@ go get github.com/KarpelesLab/replvar
 
 - Variable substitution with `{{name}}` syntax
 - Field/member access with dot notation: `{{obj.field}}`
-- Arithmetic operators: `+`, `-`, `*`, `/`
-- Bitwise operators: `|`, `&`, `^`
+- Arithmetic operators: `+`, `-`, `*`, `/`, `%` (modulo)
+- Bitwise operators: `|`, `&`, `^`, `~` (NOT), `<<`, `>>` (shifts)
 - Logical operators: `||`, `&&`, `!`
-- Comparison operators: `==`, `!=`
+- Comparison operators: `==`, `!=`, `<`, `<=`, `>`, `>=`
+- Proper operator precedence (e.g., `2 + 3 * 4` = `14`)
 - String literals with single quotes, double quotes, or backticks
 - Escape sequences in double-quoted strings (`\n`, `\t`, `\r`, `\v`, `\\`)
 - JSON mode for automatic JSON encoding of embedded values
@@ -181,19 +182,48 @@ type Var interface {
 | `{{a - b}}` | Subtraction | `{{total - discount}}` |
 | `{{a * b}}` | Multiplication | `{{qty * price}}` |
 | `{{a / b}}` | Division | `{{total / count}}` |
+| `{{a % b}}` | Modulo | `{{index % 2}}` |
+| `{{a << b}}` | Left shift | `{{1 << 4}}` |
+| `{{a >> b}}` | Right shift | `{{16 >> 2}}` |
 | `{{a \| b}}` | Bitwise OR | `{{flags \| mask}}` |
 | `{{a & b}}` | Bitwise AND | `{{flags & mask}}` |
 | `{{a ^ b}}` | Bitwise XOR | `{{a ^ b}}` |
+| `{{~a}}` | Bitwise NOT | `{{~mask}}` |
 | `{{a \|\| b}}` | Logical OR | `{{a \|\| b}}` |
 | `{{a && b}}` | Logical AND | `{{a && b}}` |
 | `{{!a}}` | Logical NOT | `{{!enabled}}` |
 | `{{a == b}}` | Equality | `{{status == 'ok'}}` |
 | `{{a != b}}` | Inequality | `{{status != 'error'}}` |
+| `{{a < b}}` | Less than | `{{age < 18}}` |
+| `{{a <= b}}` | Less than or equal | `{{score <= 100}}` |
+| `{{a > b}}` | Greater than | `{{count > 0}}` |
+| `{{a >= b}}` | Greater than or equal | `{{level >= 5}}` |
 | `{{'str'}}` | Single-quoted string | `{{'hello'}}` |
 | `{{"str"}}` | Double-quoted string (with escapes) | `{{"hello\n"}}` |
 | `` {{`str`}} `` | Backtick string (raw) | `` {{`hello`}} `` |
 | `{{123}}` | Number literal | `{{42}}` |
 | `{{1.5}}` | Float literal | `{{3.14}}` |
+
+## Operator Precedence
+
+Operators are evaluated according to standard precedence rules (higher precedence binds tighter):
+
+| Precedence | Operators | Description |
+|------------|-----------|-------------|
+| 1 (highest) | `.` | Member access |
+| 2 | `!` `~` | Unary NOT (logical, bitwise) |
+| 3 | `*` `/` `%` | Multiplication, division, modulo |
+| 4 | `+` `-` | Addition, subtraction |
+| 5 | `<<` `>>` | Bit shifts |
+| 6 | `<` `<=` `>` `>=` | Relational comparisons |
+| 7 | `==` `!=` | Equality comparisons |
+| 8 | `&` | Bitwise AND |
+| 9 | `^` | Bitwise XOR |
+| 10 | `\|` | Bitwise OR |
+| 11 | `&&` | Logical AND |
+| 12 (lowest) | `\|\|` | Logical OR |
+
+For example, `2 + 3 * 4` evaluates to `14` (not `20`), and `1 || 0 && 0` evaluates to `1` (not `0`).
 
 ## License
 

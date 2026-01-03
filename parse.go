@@ -108,50 +108,94 @@ mainloop:
 	}
 
 	// Stage 2: Operator association
-	// Process pending tokens (operators) and build the final AST.
-	// This handles unary operators (!) and binary operators (+, -, *, /, etc.)
-	for {
-		if len(res) == 1 {
-			return res[0], nil
-		}
+	// Build the AST respecting operator precedence.
+	return associateOperators(res)
+}
 
-		if tok, ok := res[0].(varPendingToken); ok {
-			// only ! (TokenNot) or ^ (binary not) operators can be here
-			switch Token(tok) {
-			case TokenNot:
-				not := &varNot{res[1]}
-				res = append([]Var{not}, res[2:]...)
-			default:
-				return nil, fmt.Errorf("step 2: unexpected token %v", tok)
-			}
-			continue
-		}
-
-		if tok, ok := res[1].(varPendingToken); ok {
-			if len(res) < 2 {
-				return nil, fmt.Errorf("invalid syntax: expected something after token %v", tok)
-			}
-			switch Token(tok) {
-			case TokenDot:
-				// access a sub element of array, we expect res[2] to be a varFetchFromCtx
-				if v2, ok := res[2].(varFetchFromCtx); ok {
-					access := &varAccessOffset{res[0], string(v2)}
-					res = append([]Var{access}, res[3:]...)
-				} else {
-					return nil, fmt.Errorf("invalid syntax: dot not followed by var")
-				}
-			default:
-				if math := Token(tok).MathOp(); math != "" {
-					res = append([]Var{&varMath{res[0], res[2], math}}, res[3:]...)
-					break
-				}
-				return nil, fmt.Errorf("step 2: unexpected token %v", tok)
-			}
-			continue
-		}
-
-		return nil, fmt.Errorf("invalid syntax: expected token in 1st or 2nd position of res")
+// associateOperators processes a slice of Var and pending tokens to build
+// the final AST with proper operator precedence.
+func associateOperators(res []Var) (Var, error) {
+	if len(res) == 0 {
+		return varNull{}, nil
 	}
+	if len(res) == 1 {
+		return res[0], nil
+	}
+
+	// Step 1: Handle leading unary operators (!, ~)
+	if tok, ok := res[0].(varPendingToken); ok {
+		t := Token(tok)
+		if t.IsUnary() {
+			inner, err := associateOperators(res[1:])
+			if err != nil {
+				return nil, err
+			}
+			switch t {
+			case TokenNot:
+				return &varNot{inner}, nil
+			case TokenBitwiseNot:
+				return &varBitwiseNot{inner}, nil
+			}
+		}
+		return nil, fmt.Errorf("unexpected token at start: %v", tok)
+	}
+
+	// Step 2: First pass - handle all dot operators (highest precedence, left-to-right)
+	for i := 1; i < len(res)-1; i += 2 {
+		if tok, ok := res[i].(varPendingToken); ok && Token(tok) == TokenDot {
+			if v2, ok := res[i+1].(varFetchFromCtx); ok {
+				access := &varAccessOffset{res[i-1], string(v2)}
+				res = append(res[:i-1], append([]Var{access}, res[i+2:]...)...)
+				i -= 2 // reprocess from same position
+				if i < 1 {
+					i = -1
+				}
+			} else {
+				return nil, fmt.Errorf("invalid syntax: dot not followed by var")
+			}
+		}
+	}
+
+	if len(res) == 1 {
+		return res[0], nil
+	}
+
+	// Step 3: Find the lowest precedence operator (rightmost for left-associativity)
+	// Lower precedence number = binds tighter, so we want highest precedence number
+	lowestPrecIdx := -1
+	lowestPrec := -1
+	for i := 1; i < len(res)-1; i += 2 {
+		if tok, ok := res[i].(varPendingToken); ok {
+			prec := Token(tok).Precedence()
+			if prec >= lowestPrec {
+				lowestPrec = prec
+				lowestPrecIdx = i
+			}
+		}
+	}
+
+	if lowestPrecIdx == -1 {
+		return nil, fmt.Errorf("invalid syntax: no operator found")
+	}
+
+	tok := res[lowestPrecIdx].(varPendingToken)
+	t := Token(tok)
+
+	// Build left and right subtrees
+	left, err := associateOperators(res[:lowestPrecIdx])
+	if err != nil {
+		return nil, err
+	}
+	right, err := associateOperators(res[lowestPrecIdx+1:])
+	if err != nil {
+		return nil, err
+	}
+
+	if math := t.MathOp(); math != "" {
+		return &varMath{left, right, math}, nil
+	}
+
+	return nil, fmt.Errorf("unexpected operator: %v", tok)
 }
 
 // parseString parses a string literal or template string.
