@@ -8,10 +8,15 @@ import (
 	"github.com/KarpelesLab/typutil"
 )
 
+// parser holds the state for parsing variable expressions and strings.
+// It operates on a buffer of runes and provides methods for tokenization
+// and AST construction.
 type parser struct {
-	buf []rune
+	buf []rune // input buffer of runes to be parsed
 }
 
+// escapedChars maps escape sequence characters to their actual values.
+// These are recognized within double-quoted strings (e.g., "\n" becomes newline).
 var escapedChars = map[rune]rune{
 	'r':  '\r',
 	'n':  '\n',
@@ -20,18 +25,24 @@ var escapedChars = map[rune]rune{
 	'\\': '\\',
 }
 
-// ParseString parses a constant string
+// ParseString parses a string that may contain embedded variable expressions.
+// Variable expressions are delimited by {{ and }}. The mode parameter controls
+// how nested variables are handled:
+//   - "text": variables are resolved to their string representation
+//   - "json": variables are automatically JSON-encoded when embedded
 func ParseString(s string, mode string) (Var, error) {
 	p := newParser(s)
 	return p.parseString(-1, mode)
 }
 
-// ParseVariable parses a variable string, such as what is typically found inside {{}}
+// ParseVariable parses a variable expression (the content typically found inside {{}}).
+// This handles variable names, operators, and nested expressions directly.
 func ParseVariable(s string) (Var, error) {
 	p := newParser(s)
 	return p.parse(false)
 }
 
+// newParser creates a new parser initialized with the given string.
 func newParser(s string) *parser {
 	p := &parser{
 		buf: []rune(s),
@@ -39,11 +50,20 @@ func newParser(s string) *parser {
 	return p
 }
 
-// parse will parse content of a variable. if varStart is false, TokenVariableEnd will raise an error
-// instead of returning
+// parse parses a variable expression using a two-stage approach:
+//
+// Stage 1: Tokenization - reads tokens and converts them to Var objects.
+// Operators are stored as varPendingToken placeholders.
+//
+// Stage 2: Operator association - processes pending tokens to build the
+// final AST by associating operators with their operands.
+//
+// If varStart is true, parsing expects to end with }} (TokenVariableEnd).
+// If varStart is false, }} will raise an error.
 func (p *parser) parse(varStart bool) (Var, error) {
 	var res []Var
 
+	// Stage 1: Tokenization loop
 mainloop:
 	for {
 		if p.empty() {
@@ -87,7 +107,9 @@ mainloop:
 		return varNull{}, nil
 	}
 
-	// step 2 of parser: associate pending tokens (operators)
+	// Stage 2: Operator association
+	// Process pending tokens (operators) and build the final AST.
+	// This handles unary operators (!) and binary operators (+, -, *, /, etc.)
 	for {
 		if len(res) == 1 {
 			return res[0], nil
@@ -132,9 +154,17 @@ mainloop:
 	}
 }
 
+// parseString parses a string literal or template string.
+//
+// The cut parameter specifies the closing delimiter:
+//   - -1: parse until end of input (for top-level strings)
+//   - '"', '\'', '`': parse until matching quote (for quoted strings)
+//
+// The mode parameter controls variable handling ("text" or "json").
+// Supports escape sequences (in double-quoted strings) and nested {{}} expressions.
 func (p *parser) parseString(cut rune, mode string) (Var, error) {
-	var str []rune
-	var res []Var
+	var str []rune // accumulator for literal characters
+	var res []Var  // result Var objects (static strings and variables)
 
 mainloop:
 	for {
@@ -207,6 +237,7 @@ mainloop:
 	return varConcat(res), nil
 }
 
+// cur returns the current rune without consuming it, or -1 if at end.
 func (p *parser) cur() rune {
 	if len(p.buf) == 0 {
 		return -1
@@ -214,16 +245,19 @@ func (p *parser) cur() rune {
 	return p.buf[0]
 }
 
+// empty returns true if the parser buffer is exhausted.
 func (p *parser) empty() bool {
 	return len(p.buf) == 0
 }
 
+// forward advances the parser by one rune.
 func (p *parser) forward() {
 	if len(p.buf) > 0 {
 		p.buf = p.buf[1:]
 	}
 }
 
+// forward2 advances the parser by two runes (used for two-character tokens like == or &&).
 func (p *parser) forward2() {
 	if len(p.buf) > 1 {
 		p.buf = p.buf[2:]
@@ -232,6 +266,7 @@ func (p *parser) forward2() {
 	}
 }
 
+// take returns the current rune and advances the parser, or -1 if at end.
 func (p *parser) take() rune {
 	if len(p.buf) == 0 {
 		return -1
@@ -241,6 +276,7 @@ func (p *parser) take() rune {
 	return r
 }
 
+// next returns the rune after the current one (lookahead), or -1 if unavailable.
 func (p *parser) next() rune {
 	if len(p.buf) < 2 {
 		return -1
@@ -248,6 +284,7 @@ func (p *parser) next() rune {
 	return p.buf[1]
 }
 
+// skipSpaces advances past any whitespace characters.
 func (p *parser) skipSpaces() {
 	for unicode.IsSpace(p.cur()) {
 		p.forward()

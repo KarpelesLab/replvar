@@ -1,30 +1,36 @@
 package replvar
 
+// Token represents a lexical token type identified during parsing.
+// Tokens are the basic building blocks used to construct the AST.
 type Token int
 
+// Token type constants representing all recognized lexical elements.
 const (
-	TokenInvalid Token = iota
-	TokenVariable
-	TokenNumber
-	TokenStringConstant
-	TokenVariableEnd // }}
+	TokenInvalid        Token = iota // Invalid or unrecognized token
+	TokenVariable                    // Identifier/variable name (e.g., "foo", "myVar")
+	TokenNumber                      // Numeric literal (integer or float)
+	TokenStringConstant              // String literal delimiter (", ', or `)
+	TokenVariableEnd                 // End of variable expression: }}
 
-	// operators
-	TokenDot       // .
-	TokenAdd       // +
-	TokenSubstract // -
-	TokenMultiply  // *
-	TokenDivide    // /
-	TokenEqual     // ==
-	TokenDifferent // !=
-	TokenNot       // !
-	TokenOr        // |
-	TokenLogicOr   // ||
-	TokenAnd       // &
-	TokenLogicAnd  // &&
-	TokenXor       // ^
+	// Operators
+	TokenDot       // Member access: .
+	TokenAdd       // Addition: +
+	TokenSubstract // Subtraction: -
+	TokenMultiply  // Multiplication: *
+	TokenDivide    // Division: /
+	TokenEqual     // Equality comparison: ==
+	TokenDifferent // Inequality comparison: !=
+	TokenNot       // Logical NOT: !
+	TokenOr        // Bitwise OR: |
+	TokenLogicOr   // Logical OR: ||
+	TokenAnd       // Bitwise AND: &
+	TokenLogicAnd  // Logical AND: &&
+	TokenXor       // Bitwise XOR: ^
 )
 
+// readToken reads the next token from the parser buffer.
+// It returns the token type and any associated data (e.g., the characters
+// that make up a number or variable name). Whitespace is automatically skipped.
 func (p *parser) readToken() (Token, []rune) {
 	for {
 		switch p.cur() {
@@ -95,6 +101,8 @@ func (p *parser) readToken() (Token, []rune) {
 	}
 }
 
+// readNumberToken reads a numeric literal (integer or floating-point).
+// It supports decimal numbers with an optional single decimal point.
 func (p *parser) readNumberToken() []rune {
 	var res []rune
 	hasDot := false
@@ -118,6 +126,8 @@ func (p *parser) readNumberToken() []rune {
 	}
 }
 
+// readVariableToken reads a variable/identifier name.
+// Valid characters are alphanumeric (a-z, A-Z, 0-9) and underscore.
 func (p *parser) readVariableToken() []rune {
 	var res []rune
 
@@ -132,6 +142,8 @@ func (p *parser) readVariableToken() []rune {
 	}
 }
 
+// MathOp returns the string representation of a math/logic operator token.
+// Returns an empty string if the token is not a recognized operator.
 func (t Token) MathOp() string {
 	switch t {
 	case TokenAdd:
