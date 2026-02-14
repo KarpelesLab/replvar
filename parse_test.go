@@ -56,6 +56,11 @@ func TestParser(t *testing.T) {
 		&testVector{"{{5 | 3}}", "7"},
 		&testVector{"{{5 & 3}}", "1"},
 		&testVector{"{{5 ^ 3}}", "6"},
+		// filter tests
+		&testVector{"hello {{var|upper}}", "hello WORLD"},
+		&testVector{"hello {{var|upper|lower}}", "hello world"},
+		&testVector{"hello {{var2.foo|upper}}", "hello BAR"},
+		&testVector{"{{var2|json}}", `{"foo":"bar","num":40}`},
 	}
 
 	for _, vect := range testV {

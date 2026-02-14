@@ -310,6 +310,43 @@ func (m *varMath) IsStatic() bool {
 	return m.a.IsStatic() && m.b.IsStatic()
 }
 
+// varFilter applies a registered filter function to its input value.
+// Implements the pipe syntax: {{value|filtername}}
+type varFilter struct {
+	input Var
+	name  string
+	fn    FilterFunc
+	args  []Var
+}
+
+func (f *varFilter) Resolve(ctx context.Context) (any, error) {
+	input, err := f.input.Resolve(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var args []any
+	for _, a := range f.args {
+		v, err := a.Resolve(ctx)
+		if err != nil {
+			return nil, err
+		}
+		args = append(args, v)
+	}
+	return f.fn(ctx, input, args)
+}
+
+func (f *varFilter) IsStatic() bool {
+	if !f.input.IsStatic() {
+		return false
+	}
+	for _, a := range f.args {
+		if !a.IsStatic() {
+			return false
+		}
+	}
+	return true
+}
+
 // varJsonMarshal wraps a variable and JSON-encodes its resolved value.
 // Used when parsing in "json" mode to ensure embedded values are valid JSON.
 type varJsonMarshal struct {

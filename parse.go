@@ -160,6 +160,27 @@ func associateOperators(res []Var) (Var, error) {
 		return res[0], nil
 	}
 
+	// Step 2b: Handle filter pipes (|) - when | is followed by a known filter name
+	for i := 1; i < len(res)-1; i += 2 {
+		if tok, ok := res[i].(varPendingToken); ok && Token(tok) == TokenOr {
+			if v2, ok := res[i+1].(varFetchFromCtx); ok {
+				if fn := LookupFilter(string(v2)); fn != nil {
+					filter := &varFilter{input: res[i-1], name: string(v2), fn: fn}
+					res = append(res[:i-1], append([]Var{filter}, res[i+2:]...)...)
+					i -= 2
+					if i < 1 {
+						i = -1
+					}
+					continue
+				}
+			}
+		}
+	}
+
+	if len(res) == 1 {
+		return res[0], nil
+	}
+
 	// Step 3: Find the lowest precedence operator (rightmost for left-associativity)
 	// Lower precedence number = binds tighter, so we want highest precedence number
 	lowestPrecIdx := -1
