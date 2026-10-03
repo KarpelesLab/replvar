@@ -2,11 +2,11 @@ package replvar
 
 import (
 	"context"
+	"encoding/json/v2"
 	"html"
 	"net/url"
 	"strings"
 
-	"github.com/KarpelesLab/pjson"
 	"github.com/KarpelesLab/typutil"
 )
 
@@ -36,7 +36,7 @@ func init() {
 }
 
 func filterJSON(ctx context.Context, input any, args []any) (any, error) {
-	enc, err := pjson.MarshalContext(ctx, input)
+	enc, err := json.Marshal(input, jsonOptions(ctx))
 	if err != nil {
 		return nil, err
 	}

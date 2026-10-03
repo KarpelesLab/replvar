@@ -3,10 +3,11 @@ package replvar
 import (
 	"bytes"
 	"context"
+	"encoding/json/jsontext"
+	"encoding/json/v2"
 	"errors"
 	"fmt"
 
-	"github.com/KarpelesLab/pjson"
 	"github.com/KarpelesLab/typutil"
 )
 
@@ -359,8 +360,23 @@ func (j *varJsonMarshal) Resolve(ctx context.Context) (any, error) {
 		return nil, err
 	}
 
-	enc, err := pjson.MarshalContext(ctx, res)
+	enc, err := json.Marshal(res, jsonOptions(ctx))
 	return string(enc), err
+}
+
+// jsonOptions returns encoding/json/v2 options that encode any value with a
+// MarshalContextJSON method under ctx, so values resolved from the template's
+// context (lazy records and the like) are expanded against the same context.
+func jsonOptions(ctx context.Context) json.Options {
+	return json.WithMarshalers(json.MarshalToFunc(func(enc *jsontext.Encoder, m interface {
+		MarshalContextJSON(context.Context) ([]byte, error)
+	}) error {
+		buf, err := m.MarshalContextJSON(ctx)
+		if err != nil {
+			return err
+		}
+		return enc.WriteValue(buf)
+	}))
 }
 
 func (j *varJsonMarshal) IsStatic() bool {
